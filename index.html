@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASB Dividend Strategy Tracker</title>
+    <!-- Include Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --navy-deep: #0f172a;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --ocean-light: #e0f2fe;
+            --seafoam: #14b8a6;
+            --bg: #f0f9ff;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-light: #475569;
+            --border: #bae6fd;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            background: var(--navy-deep);
+            color: white;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.2);
+            border-bottom: 4px solid var(--seafoam);
+        }
+        header h1 {
+            margin: 0 0 6px 0;
+            color: #ffffff;
+            font-size: 1.8rem;
+        }
+        header p {
+            color: #7dd3fc;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--navy-deep);
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .result-box {
+            background: #f0f9ff;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        .result-box.profit {
+            border-left-color: var(--seafoam);
+            background: #f0fdf4;
+        }
+        .result-box h3 {
+            margin: 0 0 6px 0;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+        .result-box .value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--navy-deep);
+        }
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            margin-top: 20px;
+        }
+        @media(max-width: 768px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ASB Dividend Strategy Tracker</h1>
+        <p>Compare Person A (Monthly) vs Person B (Nov Lump-Sum) with Units & Growth Chart [cite: 1]</p>
+    </header>
+
+    <div class="card">
+        <div class="form-grid">
+            <div class="input-group">
+                <label for="monthlyAmount">Person A Monthly (RM)</label>
+                <input type="number" id="monthlyAmount" value="200">
+            </div>
+            <div class="input-group">
+                <label for="annualLumpSum">Person B Yearly Lump-Sum (RM)</label>
+                <input type="number" id="annualLumpSum" value="2400">
+            </div>
+            <div class="input-group">
+                <label for="dividendRate">Expected Dividend Rate (%)</label>
+                <input type="number" step="0.05" id="dividendRate" value="5.75">
+            </div>
+            <div class="input-group">
+                <label for="years">Investment Duration (Years)</label>
+                <input type="number" id="years" value="5">
+            </div>
+        </div>
+        <button onclick="calculateASB()">Update Calculations & Chart</button>
+    </div>
+
+    <div class="comparison-container">
+        <!-- Person A Results -->
+        <div class="card" style="border-top: 4px solid var(--primary);">
+            <h2 style="margin: 0 0 12px 0; font-size: 1.2rem; color: var(--navy-deep);">Person A (Monthly)</h2>
+            <div class="results-grid" style="grid-template-columns: 1fr;">
+                <div class="result-box">
+                    <h3>Total Units Held</h3>
+                    <div class="value" id="aUnits">0.00 Units</div>
+                </div>
+                <div class="result-box">
+                    <h3>Total Invested Capital</h3>
+                    <div class="value" id="aInvested">RM 0.00</div>
+                </div>
+                <div class="result-box">
+                    <h3>Total Value (Principal + Div)</h3>
+                    <div class="value" id="aTotalValue">RM 0.00</div>
+                </div>
+                <div class="result-box profit">
+                    <h3>Total Profit / Loss</h3>
+                    <div class="value" id="aProfit">RM 0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Person B Results -->
+        <div class="card" style="border-top: 4px solid var(--seafoam);">
+            <h2 style="margin: 0 0 12px 0; font-size: 1.2rem; color: var(--navy-deep);">Person B (Nov Lump-sum)</h2>
+            <div class="results-grid" style="grid-template-columns: 1fr;">
+                <div class="result-box">
+                    <h3>Total Units Held</h3>
+                    <div class="value" id="bUnits">0.00 Units</div>
+                </div>
+                <div class="result-box">
+                    <h3>Total Invested Capital</h3>
+                    <div class="value" id="bInvested">RM 0.00</div>
+                </div>
+                <div class="result-box">
+                    <h3>Total Value (Principal + Div)</h3>
+                    <div class="value" id="bTotalValue">RM 0.00</div>
+                </div>
+                <div class="result-box profit">
+                    <h3>Total Profit / Loss</h3>
+                    <div class="value" id="bProfit">RM 0.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Chart Card -->
+    <div class="card">
+        <h2 style="margin: 0 0 10px 0; font-size: 1.2rem; color: var(--navy-deep);">Growth Visualization (Total Value Over Time)</h2>
+        <div class="chart-container">
+            <canvas id="growthChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+let myChart = null;
+
+function calculateASB() {
+    const monthlyAmt = parseFloat(document.getElementById('monthlyAmount').value) || 0;
+    const lumpSumAmt = parseFloat(document.getElementById('annualLumpSum').value) || 0;
+    const rate = (parseFloat(document.getElementById('dividendRate').value) || 0) / 100;
+    const totalYears = parseInt(document.getElementById('years').value) || 1;
+
+    let labels = [];
+    let dataA = [];
+    let dataB = [];
+
+    // --- Simulation for Person A ---
+    let balanceA = 0;
+    let totalInvestedA = 0;
+    
+    for (let y = 1; y <= totalYears; y++) {
+        let yearlyDividend = 0;
+        for (let m = 1; m <= 12; m++) {
+            balanceA += monthlyAmt;
+            totalInvestedA += monthlyAmt;
+            yearlyDividend += balanceA * (rate / 12);
+        }
+        balanceA += yearlyDividend; // Compounded as units
+        
+        if(!labels.includes(`Year ${y}`)) {
+            labels.push(`Year ${y}`);
+        }
+        dataA.push(balanceA);
+    }
+    let profitA = balanceA - totalInvestedA;
+
+    // --- Simulation for Person B ---
+    let balanceB = 0;
+    let totalInvestedB = 0;
+
+    for (let y = 1; y <= totalYears; y++) {
+        let yearlyDividendB = 0;
+        for (let m = 1; m <= 12; m++) {
+            if (m === 11) {
+                balanceB += lumpSumAmt;
+                totalInvestedB += lumpSumAmt;
+            }
+            yearlyDividendB += balanceB * (rate / 12);
+        }
+        balanceB += yearlyDividendB; // Compounded as units
+        dataB.push(balanceB);
+    }
+    let profitB = balanceB - totalInvestedB;
+
+    // --- Render Results ---
+    document.getElementById('aUnits').innerText = balanceA.toLocaleString('en-MY', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " Units";
+    document.getElementById('aInvested').innerText = formatRM(totalInvestedA);
+    document.getElementById('aTotalValue').innerText = formatRM(balanceA);
+    document.getElementById('aProfit').innerText = formatRM(profitA);
+
+    document.getElementById('bUnits').innerText = balanceB.toLocaleString('en-MY', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " Units";
+    document.getElementById('bInvested').innerText = formatRM(totalInvestedB);
+    document.getElementById('bTotalValue').innerText = formatRM(balanceB);
+    document.getElementById('bProfit').innerText = formatRM(profitB);
+
+    // --- Render Chart ---
+    renderChart(labels, dataA, dataB);
+}
+
+function formatRM(amount) {
+    return 'RM ' + amount.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderChart(labels, dataA, dataB) {
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    
+    if (myChart) {
+        myChart.destroy(); // Destroy previous chart instance before redrawing [cite: 1]
+    }
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Person A (Monthly Total Value)',
+                    data: dataA,
+                    borderColor: '#0284c7',
+                    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Person B (Nov Lump-Sum Total Value)',
+                    data: dataB,
+                    borderColor: '#14b8a6',
+                    backgroundColor: 'rgba(20, 184, 166, 0.12)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Run calculation on load
+window.onload = calculateASB;
+</script>
+
+</body>
+</html>
